@@ -11,6 +11,35 @@ import requests.auth
 requests.packages.urllib3.disable_warnings()    
 
 
+def obj_to_csv(obj, keys, getter=lambda o,k: o[k], fn=None):
+    '''
+    getter : func : must accept (obj, key) as parameters e.g. lambda o, k: o[k]
+    '''
+    def get_line(o):
+        try:
+            return ','.join([str(getter(o, k)) for k in keys]) + '\n'
+        except:
+            return ''
+    if type(obj) is not list:
+        obj = [obj]
+    out = ','.join(keys) + '\n'
+    if fn is None:
+        for o in obj:
+            out += get_line(o)
+    elif type(fn) is str:
+        with open(fn, 'w') as f:
+            f.write(out)
+            for o in obj:
+                f.write(get_line(o))
+    elif type(f) is file:
+        if 'a' not in file.mode:
+            f.write(out)
+        for o in obj:
+            f.write(get_line(o))    
+    if fn is None:
+        return out
+
+
 def get_token(client_id, secret_key, username, password):
     client_auth = requests.auth.HTTPBasicAuth(client_id, secret_key)
     post_data = {"grant_type": "password", "username": username, "password": password}
@@ -53,4 +82,6 @@ if __name__ == '__main__':
     data = get_saved(config.get('global', 'username'), token, jdata)
     with open('saved_data.txt', 'w') as f:
         json.dump(data, f)
+    obj_to_csv(data['data']['children'], ['title', 'subreddit', 'permalink', 'num_comments', 'url', 'created_utc', 'created'], lambda o,k: o['data'][k], 'saved2.csv')
+            
     
